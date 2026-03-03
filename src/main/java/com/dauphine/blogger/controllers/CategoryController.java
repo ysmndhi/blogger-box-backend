@@ -2,11 +2,12 @@ package com.dauphine.blogger.controllers;
 
 import com.dauphine.blogger.dto.CreationCategoryRequest;
 import com.dauphine.blogger.dto.UpdateCategoryRequest;
+import com.dauphine.blogger.exceptions.*;
 import com.dauphine.blogger.models.Category;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.dauphine.blogger.services.CategoryService;
+import java.net.URI;
 
 import java.util.List;
 import java.util.UUID;
@@ -34,29 +35,28 @@ public class CategoryController {
 
     // Retrieve category by id
     @GetMapping("/{id}")
-    public Category getCategoryById(@PathVariable UUID id) {
-        return categoryService.getById(id);
+    public ResponseEntity<Category> getById(@PathVariable UUID id) throws CategoryNotFoundByIdException {
+        return ResponseEntity.ok(categoryService.getById(id));
     }
 
-    // Create new category
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public Category createCategory(@RequestBody CreationCategoryRequest req) {
-        return categoryService.create(req.getName());
+    public ResponseEntity<Category> create(@RequestBody CreationCategoryRequest req)
+            throws CategoryNameAlreadyExistsException {
+        Category category = categoryService.create(req.getName());
+        return ResponseEntity
+                .created(URI.create("v1/categories/" + category.getId()))
+                .body(category);
     }
 
-    // Update category name
     @PutMapping("/{id}")
-    public Category updateCategory(@PathVariable UUID id, @RequestBody UpdateCategoryRequest req) {
-        return categoryService.updateName(id, req.getName());
+    public ResponseEntity<Category> updateName(@PathVariable UUID id, @RequestBody UpdateCategoryRequest req)
+            throws CategoryNotFoundByIdException, CategoryNameAlreadyExistsException {
+        return ResponseEntity.ok(categoryService.updateName(id, req.getName()));
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteCategory(@PathVariable UUID id) {
-        categoryService.deleteById(id);
+    public ResponseEntity<Boolean> delete(@PathVariable UUID id) throws CategoryNotFoundByIdException {
+        return ResponseEntity.ok(categoryService.deleteById(id));
     }
-
-
 
 }

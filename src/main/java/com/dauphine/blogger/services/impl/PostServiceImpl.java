@@ -8,6 +8,7 @@ import com.dauphine.blogger.services.PostService;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.UUID;
+import com.dauphine.blogger.exceptions.*;
 
 @Service
 public class PostServiceImpl implements PostService {
@@ -26,27 +27,27 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public Post getById(UUID id) {
+    public Post getById(UUID id) throws PostNotFoundByIdException {
         return repository.findById(id)
-                .orElse(null);
+                .orElseThrow(() -> new PostNotFoundByIdException(id));
     }
 
     @Override
-    public Post create(String title, String content, UUID categoryId) {
-        Category category = categoryService.getById(categoryId);
-        if (category == null) {
-            return null;
+    public Post create(String title, String content, UUID categoryId) throws CategoryNotFoundByIdException, PostTitleAlreadyExistsException {
+        boolean exists = repository.findAllLikeValue(title)
+                .stream()
+                .anyMatch(p -> p.getTitle().equalsIgnoreCase(title));
+        if (exists) {
+            throw new PostTitleAlreadyExistsException(title);
         }
+        Category category = categoryService.getById(categoryId);
         Post post = new Post(title, content, category);
         return repository.save(post);
     }
 
     @Override
-    public Post update(UUID id, String title, String content) {
-        Post post = getById(id);
-        if (post == null) {
-            return null;
-        }
+    public Post update(UUID id, String title, String content) throws PostNotFoundByIdException {
+        Post post = getById(id); // lance PostNotFoundByIdException si non trouvé
         post.setTitle(title);
         post.setContent(content);
         return repository.save(post);
@@ -61,5 +62,10 @@ public class PostServiceImpl implements PostService {
     @Override
     public List<Post> getAllByCategoryId(UUID categoryId) {
         return repository.findAllByCategoryIdOrderByCreatedDateDesc(categoryId);
+    }
+
+    @Override
+    public List<Post> getAllLikeValue(String value) {
+        return repository.findAllLikeValue(value);
     }
 }

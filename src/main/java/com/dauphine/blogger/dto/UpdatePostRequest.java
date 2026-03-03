@@ -5,7 +5,7 @@ import java.util.UUID;
 public class UpdatePostRequest {
     private String title;
     private String content;
-    private UUID categoryId; // optionnel : pour changer de catégorie
+    private UUID categoryId; // pour changer de category
 
     public UpdatePostRequest() {}
 

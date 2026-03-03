@@ -3,12 +3,13 @@ package com.dauphine.blogger.controllers;
 import com.dauphine.blogger.dto.CreationPostRequest;
 import com.dauphine.blogger.dto.UpdatePostRequest;
 import com.dauphine.blogger.models.Post;
-import org.springframework.http.HttpStatus;
+import com.dauphine.blogger.exceptions.*;
+import java.net.URI;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.dauphine.blogger.services.PostService;
 
 import java.util.*;
-
 
 
 @RestController
@@ -21,34 +22,42 @@ public class PostController {
         this.postService = postService;
     }
 
-    @PostMapping("/posts")
-    @ResponseStatus(HttpStatus.CREATED)
-    public Post createPost(@RequestBody CreationPostRequest req) {
-        return postService.create(req.getTitle(), req.getContent(), req.getCategoryId());
-    }
-
-    // Update an existing post
-    @PutMapping("/posts/{id}")
-    public Post updatePost(@PathVariable UUID id, @RequestBody UpdatePostRequest req) {
-        return postService.update(id, req.getTitle(), req.getContent()); // plus de categoryId
-    }
-
-    // Delete an existing post
-    @DeleteMapping("/posts/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deletePost(@PathVariable UUID id) {
-        postService.deleteById(id); // ← était delete(id)
-    }
-
     // Retrieve all posts
     @GetMapping("/posts")
-    public List<Post> getAllPosts() {
-        return postService.getAll();
+    public ResponseEntity<List<Post>> getAll(@RequestParam(required = false) String value) {
+        List<Post> posts = value == null || value.isBlank()
+                ? postService.getAll()
+                : postService.getAllLikeValue(value);
+        return ResponseEntity.ok(posts);
     }
 
-    // Retrieve all posts per a category
-    @GetMapping("/categories/{categoryId}/posts")
-    public List<Post> getPostsByCategory(@PathVariable UUID categoryId) {
-        return postService.getAllByCategoryId(categoryId);
+    @GetMapping("/posts/{id}")
+    public ResponseEntity<Post> getById(@PathVariable UUID id) throws PostNotFoundByIdException {
+        return ResponseEntity.ok(postService.getById(id));
     }
+
+    @PostMapping("/posts")
+    public ResponseEntity<Post> create(@RequestBody CreationPostRequest req)
+            throws CategoryNotFoundByIdException, PostTitleAlreadyExistsException {
+        Post post = postService.create(req.getTitle(), req.getContent(), req.getCategoryId());
+        return ResponseEntity
+                .created(URI.create("v1/posts/" + post.getId()))
+                .body(post);
+    }
+
+    @PutMapping("/posts/{id}")
+    public ResponseEntity<Post> update(@PathVariable UUID id, @RequestBody UpdatePostRequest req) throws PostNotFoundByIdException, CategoryNotFoundByIdException {
+        return ResponseEntity.ok(postService.update(id, req.getTitle(), req.getContent()));
+    }
+
+    @DeleteMapping("/posts/{id}")
+    public ResponseEntity<Boolean> delete(@PathVariable UUID id) throws PostNotFoundByIdException {
+        return ResponseEntity.ok(postService.deleteById(id));
+    }
+
+    @GetMapping("/categories/{categoryId}/posts")
+    public ResponseEntity<List<Post>> getByCategory(@PathVariable UUID categoryId) {
+        return ResponseEntity.ok(postService.getAllByCategoryId(categoryId));
+    }
+
 }
