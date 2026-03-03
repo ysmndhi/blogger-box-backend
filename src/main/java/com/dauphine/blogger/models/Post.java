@@ -1,17 +1,42 @@
 package com.dauphine.blogger.models;
 
+import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Entity
+@Table(name = "post")
 public class Post {
+
+    @Id
+    @Column(name = "id")
     private UUID id;
+
+    @Column(name = "title")
     private String title;
+
+    @Column(name = "content")
     private String content;
+
+    @Column(name = "created_date")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     private LocalDateTime createdDate;
+
+    @ManyToOne
+    @JoinColumn(name = "category_id")
     private Category category;
 
     public Post() {}
 
+    public Post(String title, String content, Category category){
+        this.id=UUID.randomUUID();
+        this.title = title;
+        this.content = content;
+        this.createdDate = LocalDateTime.now();
+        this.category = category;
+    }
 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
